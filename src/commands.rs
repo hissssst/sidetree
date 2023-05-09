@@ -19,7 +19,10 @@ pub enum Argument {
 #[derive(Debug, Clone, PartialEq)]
 pub enum Command {
   Quit,
+  Add(String),
   Shell(String),
+  Delete(String),
+  SafeDelete(String),
   Open(Option<PathBuf>),
   CmdStr(String),
   Echo(String),
@@ -33,7 +36,11 @@ type CmdBlock = Vec<Command>;
 
 pub fn build_cmd(cmd: String, args: Vec<String>) -> Result<Command, String> {
   match cmd.as_str() {
+    "q" => Ok(Command::Quit),
     "quit" => Ok(Command::Quit),
+    "add" => Ok(Command::Add(args.join(" "))),
+    "delete" => Ok(Command::Delete(args.join(" "))),
+    "safe_delete" => Ok(Command::SafeDelete(args.join(" "))),
     "open" => Ok(Command::Open(None)),
     "set" => Ok(Command::Set(args[0].clone(), args[1].clone())),
     "echo" => Ok(Command::Echo(args.join(" "))),

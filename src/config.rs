@@ -8,7 +8,6 @@ pub struct Config {
   pub show_hidden: bool,
   pub open_cmd: String,
   pub quit_on_open: bool,
-  pub file_icons: bool,
   pub icon_style: Style,
   pub dir_name_style: Style,
   pub file_name_style: Style,

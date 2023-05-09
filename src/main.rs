@@ -4,7 +4,6 @@ mod cache;
 mod commands;
 mod config;
 mod file_tree;
-mod icons;
 mod keymap;
 mod prompt;
 mod util;

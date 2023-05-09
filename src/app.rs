@@ -10,6 +10,7 @@ use crate::prompt::StatusLine;
 use tui::backend::Backend;
 
 use std::path::{Path, PathBuf};
+use std::fs::{File, remove_file, rename, remove_dir};
 use termion::event::{Key, MouseEvent};
 use tui::layout::{Constraint, Direction, Layout};
 use tui::Frame;
@@ -92,15 +93,6 @@ impl App {
       return Some(());
     }
     match k {
-      Key::Char('q') => {
-        self.exit = true;
-      }
-      Key::Char('j') | Key::Down => {
-        self.tree.select_next();
-      }
-      Key::Char('k') | Key::Up => {
-        self.tree.select_prev();
-      }
       Key::Char('\n') => {
         let entry = self.tree.entry().clone();
         if entry.is_dir {
@@ -109,7 +101,13 @@ impl App {
           self.run_command(&Command::Open(None))
         }
       }
-      Key::Char('l') | Key::Right => {
+      Key::Down => {
+        self.tree.select_next();
+      }
+      Key::Up => {
+        self.tree.select_prev();
+      }
+      Key::Right => {
         let entry = self.tree.entry().clone();
         if entry.is_dir {
           if !entry.is_expanded() {
@@ -119,7 +117,7 @@ impl App {
           }
         }
       }
-      Key::Char('h') | Key::Left => {
+      Key::Left => {
         let entry = self.tree.entry().clone();
         if entry.is_expanded() {
           self.tree.collapse(&entry.path);
@@ -130,13 +128,13 @@ impl App {
       Key::Char('!') => {
         self.statusline.prompt(Box::new(ShellPrompt {}));
       }
+      Key::Char('/') => {
+        self.statusline.prompt(Box::new(SearchPrompt {}));
+      }
       Key::Char(':') => {
         self.statusline.prompt(Box::new(CmdPrompt {}));
       }
-      Key::Alt('l') => {
-        self.run_command(&Command::Cd(None));
-      }
-      Key::Char('.') => {
+      Key::Char('h') => {
         self.config.show_hidden = !self.config.show_hidden;
       }
       _ => {}
@@ -155,10 +153,58 @@ impl App {
     match cmd {
       Quit => {
         self.quit();
-      }
+      },
+      Add(filename) => {
+        let dir = self.tree.current_dir();
+        let fullname = dir.join(filename);
+        if fullname.exists() {
+          self.statusline.info.info("This file already exists");
+        } else {
+          if let Err(reason) = File::create(fullname) {
+            self.statusline.info.error(format!("Failed to create file: {}", reason).as_str());
+          }
+        }
+      },
+      Delete(filename) => {
+        let path = Path::new(filename);
+        if path.exists() {
+          if path.is_dir() {
+            match remove_dir(path) {
+              Ok(_) => {
+                self.statusline.info.info(format!("Removed dir: \"{}\"", filename).as_str());
+              },
+              Err(reason) => {
+                self.statusline.info.error(format!("Failed with: \"{}\"", reason).as_str());
+              }
+            }
+          } else {
+            match remove_file(path) {
+              Ok(_) => {
+                self.statusline.info.info(format!("Removed file: \"{}\"", filename).as_str());
+              },
+              Err(reason) => {
+                self.statusline.info.error(format!("Failed with: \"{}\"", reason).as_str());
+              }
+            }
+          }
+        } else {
+          self.statusline.info.error(format!("\"{}\" doesn't exist", filename).as_str());
+        }
+      },
+      // Unix only
+      SafeDelete(filename) => {
+        let path = Path::new(filename);
+        if path.exists() {
+          if let Err(reason) = rename(path, "/tmp".to_owned() + path.file_name().unwrap().to_str().unwrap()) {
+            self.statusline.info.error(format!("Failed with: \"{}\"", filename).as_str());
+          }
+        } else {
+          self.statusline.info.error(format!("File \"{}\" doesn't exist", filename).as_str());
+        }
+      },
       Shell(cmd) => {
         self.run_shell(cmd.as_str());
-      }
+      },
       Open(path) => {
         let cmd = self.config.open_cmd.clone();
         let path = path.as_ref().unwrap_or_else(|| &self.tree.entry().path);
@@ -167,7 +213,7 @@ impl App {
         if self.config.quit_on_open {
           self.quit();
         }
-      }
+      },
       CmdStr(cmd) => match parse_cmds(&cmd) {
         Ok(cmds) => self.run_commands(&cmds),
         Err(msg) => self.error(msg.as_str()),
@@ -176,10 +222,10 @@ impl App {
         if let Err(e) = self.config.set_opt(opt, val) {
           self.statusline.info.error(e.as_str());
         }
-      }
+      },
       Echo(msg) => {
         self.statusline.info.info(msg.as_str());
-      }
+      },
       Cd(path) => {
         let path = path.as_ref().unwrap_or_else(|| &self.tree.entry().path);
         let path = path.clone();
@@ -189,7 +235,7 @@ impl App {
             .change_root(&self.config, std::env::current_dir().unwrap()),
           Err(err) => self.error(err.to_string().as_str()),
         }
-      }
+      },
       MapKey(key, cmd) => {
         self.keymap.add_mapping(key.clone(), (**cmd).clone());
       }
@@ -241,6 +287,20 @@ impl App {
         }
       }
     }
+  }
+}
+
+pub struct SearchPrompt {}
+
+impl Prompt for SearchPrompt {
+  fn prompt_text(&self) -> &str {
+    "/"
+  }
+  fn on_submit(&mut self, text: &str) -> Option<Command> {
+    Some(Command::Shell(text.to_string()))
+  }
+  fn on_cancel(&mut self) -> Option<Command> {
+    None
   }
 }
 

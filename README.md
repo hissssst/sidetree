@@ -34,8 +34,6 @@ set show_hidden false
 set quit_on_open false
 set open_cmd 'kcr open "${sidetree_entry}"'
 
-set file_icons true
-set icon_style darkgray
 set dir_name_style lightblue+b
 set file_name_style reset
 set highlight_style +r
@@ -104,9 +102,6 @@ Example: `set open_cmd 'xdg-open "$sidetree_entry"'`.
 ### `quit_on_open: bool`
 Whether to quit sidetree after `:open` (or pressing `<return>` on a file)
 
-### `file_icons: bool`
-Whether to enable file icons by extension. May or may not be supported by your fonts.
-
 ### Styling
 Style options have the following format:
 `[<fg>][,<bg>][+<add_attr>][-<sub_attr>]`
@@ -132,7 +127,6 @@ r → reversed
 
 Example styles: `blue,black+bu-i`, `,red`, `reset,reset+r`, `-B`
 
-#### `icon_style: Style`: Style of the file/folder icon
 #### `dir_name_style: Style`: Style of directory names
 #### `file_name_style: Style`: Style of non-directory names
 #### `highlight_style: Style`: Style of the highlighted entry
@@ -148,7 +142,6 @@ TODO
  - [x] More navigation commands
  - [x] Save selection & expanded folders between launches
  - [x] Backend for styling entries
- - [x] File icons by extension
  - [x] Custom formatting
  - [x] Better script parsing
    - [x] Comments
@@ -162,3 +155,5 @@ TODO
    - [ ] Gitignore
    - [ ] Git status
  - [ ] IPC for two way syncing
+
+ - [W] File icons by extension. Useless

@@ -32,8 +32,8 @@ impl PromptState {
       Key::Char('\n') => {
         (true, self.submit())
       }
-      Key::Char(c) => {
-        self.input.push(c);
+      Key::Char(char) => {
+        self.input.push(char);
         (false, None)
       }
       Key::Backspace => {

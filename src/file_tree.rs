@@ -1,5 +1,4 @@
 use crate::config::Config;
-use crate::icons;
 use crate::util::StatefulList;
 use path_absolutize::Absolutize;
 use std::collections::HashSet;
@@ -100,7 +99,6 @@ impl FileTreeState {
   pub fn select_nth(&mut self, n: usize) {
     self.lines.nth(n)
   }
-
   pub fn select_next(&mut self) {
     self.lines.next()
   }
@@ -311,31 +309,6 @@ impl TreeEntry {
       return false;
     }
     return true;
-  }
-
-  // https://www.nerdfonts.com/cheat-sheet
-  fn icon(&self, conf: &Config) -> char {
-    if conf.file_icons {
-      icons::icon_for_file(self.path.as_path())
-    } else {
-      if self.is_dir {
-        if self.expanded {
-          ''
-        } else {
-          if self.is_link {
-            ''
-          } else {
-            ''
-          }
-        }
-      } else {
-        if self.is_link {
-          ''
-        } else {
-          ''
-        }
-      }
-    }
   }
 
   pub fn build_line(&self, conf: &Config, level: usize) -> Option<TreeEntryLine> {
